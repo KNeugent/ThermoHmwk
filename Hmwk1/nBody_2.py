@@ -7,19 +7,22 @@ import matplotlib.pyplot as plt
 # initialize paramters
 # number of particles
 N = 100
-# box size (m)
+# box side length (m)
 L = 1000
 # steps to iterate over
 steps = 100
 # time (s)
-t = 5
+time = 5
 # mass (kg)
 m1 = 1
-m2 = 10
+m2 = 1
 # radius (m)
 r = .02*L
 # Kinetic Energy (J)
 KEstart = 10
+
+# for relaxation time
+vSum = np.zeros(steps*time)
 
 # Initialize particle properties within grid
 x = np.zeros(N)
@@ -29,6 +32,20 @@ v = np.zeros(N)
 vx = np.zeros(N)
 vy = np.zeros(N)
 KE = np.ones(N)*KEstart
+
+# Initialize pressures
+rightM = np.zeros(N)
+rightV = np.zeros(N)
+rightN = 0
+leftM = np.zeros(N)
+leftV = np.zeros(N)
+leftN = 0
+topM = np.zeros(N)
+topV = np.zeros(N)
+topN = 0
+bottomM = np.zeros(N)
+bottomV = np.zeros(N)
+bottomN = 0
 
 # function definitions
 # move particles
@@ -66,8 +83,7 @@ for i in range(N):
     x[i] = float(np.random.randint(L))
     y[i] = float(np.random.randint(L))
     # allows for a range of masses
-#    m[i] = np.random.choice([m1,m2])
-    m[i] = 1
+    m[i] = np.random.choice([m1,m2])
     # determine velocities (x and y can be positive or negative)
     v[i] = np.sqrt((2*KE[i]/m[i]))
     vx[i] = np.random.choice(int(v[i]))*np.random.choice([-1.0,1.0])
@@ -81,7 +97,7 @@ hist_velocity(v,"Velocity Before - 2mass","velocity (m/s)","N",2)
 hist_velocity(KE,"KE Before - 2mass","energy (J)","N",2)
 
 # iterate through time steps
-for t in range(0,steps*t):
+for t in range(0,steps*time):
     # iterate through particles
     for i in range(N):
         # first check and see if particle is near a wall 
@@ -124,31 +140,71 @@ for t in range(0,steps*t):
         if x[i] > L:
             # past the right wall
             x[i]= 0.0
+            # save for use of pressure determination
+            rightM = m[i]
+            rightV = v[i]
+            rightN = rightN +1
         elif x[i] < 0.0:
             # past the left wall
             x[i]= float(L)
-
+            leftM = m[i]
+            leftV = v[i]
+            leftN = leftN +1
         if y[i] > L:
             # past the top wall
             y[i]= 0.0
+            topM = m[i]
+            topV = v[i]
+            topN = topN + 1
         elif y[i] < 0.0:
             # past the bottom wall
             y[i]= float(L) 
-        
+            bottomM = m[i]
+            bottomV = v[i]        
+            bottomN = bottomN + 1
     # relaxation
-    sortV = np.sort(v)
-    max = np.max(v)
-    min = np.min(i for i in v if i > 0)
-    step = int((max-min)/10)
-    for 
-    for s in range(0,step*2):
-        up = np.sum(med*s,med*(s+1)
-    
-    print "timestep", t
+# what didn't work
+#    vSplit = np.split(v,50)
+#    v1bin = (np.sum(vSplit[0]) - np.sum(vSplit[9]))uu
+#    v2bin = (np.sum(vSplit[1]) - np.sum(vSplit[8]))
+#    v3bin = (np.sum(vSplit[2]) - np.sum(vSplit[7]))
+#    v4bin = (np.sum(vSplit[3]) - np.sum(vSplit[6]))
+#    v5bin = (np.sum(vSplit[4]) - np.sum(vSplit[5]))
+#    vSum[t] = v1bin+v2bin+v3bin+v4bin+v5bin
+#    print t
+#    print vSum[t]
 
+# what did work
+    v[np.isnan(v)] = 0
+    mean = np.mean(v)
+    median = np.median(v)
+    vSum[t] = abs(mean - median)
+
+# pressure calculation
+# P = N*(2/3)((average mass)*(average velocity)**2)/2
+rightP = rightN * (2./3.) * ((np.sum(rightM)/rightN)+(np.sum(rightV)/rightN)**2)/2.
+leftP = leftN * (2./3.) * ((np.sum(leftM)/leftN)+(np.sum(leftV)/leftN)**2)/2.
+topP = topN * (2./3.) * ((np.sum(topM)/topN)+(np.sum(topV)/topN)**2)/2.
+bottomP = bottomN * (2./3.) * ((np.sum(bottomM)/bottomN)+(np.sum(bottomV)/bottomN)**2)/2.
+print "right N = ", rightN
+print "right KE = ", ((np.sum(rightM)/rightN)+(np.sum(rightV)/rightN)**2)/2.
+print "right P = ", rightP
+
+print "left N = ", leftN
+print "left KE = ", ((np.sum(leftM)/leftN)+(np.sum(leftV)/leftN)**2)/2.
+print "left P = ", leftP
+
+print "top N = ", topN
+print "top KE = ", ((np.sum(topM)/topN)+(np.sum(topV)/topN)**2)/2.
+print "top P = ", topP
+
+print "bottom N = ", bottomN
+print "bottom KE = ", ((np.sum(bottomM)/bottomN)+(np.sum(bottomV)/bottomN)**2)/2.
+print "bottom P = ", bottomP
+    
 # plot final results          
-plot_position(x,y,"After - 2mass","x (m)","y (m)")
-hist_velocity(vx,"X Velocity After - 2mass","velocity (m/s)","N",10)
-hist_velocity(vy,"Y Velocity After - 2mass","velocity (m/s)","N",10)
-hist_velocity(v,"Velocity After - 2mass","velocity (m/s)","N",10)
-hist_velocity(KE,"KE After - 2mass","energy (J)","N",10)
+plot_position(x,y,"After - 1g and 10g","x (m)","y (m)")
+hist_velocity(vx,"X Velocity After - 1g and 10g","velocity (m/s)","N",10)
+hist_velocity(vy,"Y Velocity After - 1g and 10g","velocity (m/s)","N",10)
+hist_velocity(v,"Velocity After - 1g and 10g","velocity (m/s)","N",10)
+hist_velocity(KE,"KE After - 1g and 10g","energy (J)","N",10)
